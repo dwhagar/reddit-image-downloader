@@ -5,7 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System;
 using System.Runtime.InteropServices;
-
+using System.Windows;
 
 namespace reddit_fetch
 {
@@ -69,10 +69,39 @@ namespace reddit_fetch
         public string ConfigFilePath { get; set; }
 
         // Settings properties
+        public string DatabasePath { set; get; } = Path.Combine(AppContext.BaseDirectory, "image-hashes.db");
         public string ClientId { get; set; } = string.Empty;
         public string ClientSecret { get; set; } = string.Empty;
-        public string UserAgent { get; set; } = string.Empty;
+        public string UserAgent { get; set; } = "windows:reddit-fetch:v1.0 (by github.com/dwhagar)";
         public string DownloadPath { get; set; } = PathHelper.GetDefaultDownloadPath();
+        public int MinutesBetweenChecks { get; set; } = 60;
+
+        /// <summary>
+        /// Minimum allowed aspect ratio (width / height) for images.
+        /// </summary>
+        public float MinAspectRatio { get; set; } = 1.3f; // e.g., 4:3 landscape
+
+        /// <summary>
+        /// Maximum allowed aspect ratio (width / height) for images.
+        /// </summary>
+        public float MaxAspectRatio { get; set; } = 2.0f; // e.g., ultrawide 21:9
+
+        /// <summary>
+        /// Minimum normalized brightness (0.0 to 1.0) for acceptable images.
+        /// </summary>
+        public float MinBrightness { get; set; } = 0.0f; // Optional, 0 = black, 1 = white
+
+        /// <summary>
+        /// Maximum normalized brightness (0.0 to 1.0) for acceptable images.
+        /// </summary>
+        public float MaxBrightness { get; set; } = 0.7f;
+
+        /// <summary>
+        /// Minimum required resolution in megapixels (width * height / 1,000,000).
+        /// </summary>
+        public float MinResolutionMegapixels { get; set; } = 2.5f; // e.g., 2 MP minimum
+
+
         public List<SubredditInfo> Subreddits { get; set; } = new();
 
         /// <summary>

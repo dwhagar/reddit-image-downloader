@@ -21,8 +21,12 @@ namespace reddit_fetch
                 string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
                 var config = new AppConfig();
                 CliHandler.Config = config;
+                ImageFilterHelper.Config = config;
+                RedditApiHelper.Config = config;
                 config.ConfigFilePath = configPath;
                 config.Load();
+
+                // TODO: Check to see if files exist still
 
                 if (args.Length > 0)
                 {
