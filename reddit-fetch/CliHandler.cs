@@ -10,6 +10,8 @@ namespace reddit_fetch
 {
     public static class CliHandler
     {
+        public static AppConfig Config { get; set; }
+
         public static async Task<int> HandleAsync(string[] args)
         {
             var rootCommand = new RootCommand("Reddit Image Downloader CLI");
@@ -67,22 +69,81 @@ namespace reddit_fetch
             // Download logic here
         }
 
-        private static void AddHandler(string subreddit)
+        private static void AddHandler(string subredditName)
         {
-            Logger.LogInfo($"Adding subreddit: {subreddit}");
-            // Add logic here
+            if (string.IsNullOrWhiteSpace(subredditName))
+            {
+                Logger.LogError("Subreddit name cannot be empty.");
+                return;
+            }
+
+            // Check if subreddit already exists (case-insensitive)
+            if (Config.Subreddits.Any(s => s.Name.Equals(subredditName, StringComparison.OrdinalIgnoreCase)))
+            {
+                Logger.LogInfo($"Subreddit '{subredditName}' is already configured.");
+                return;
+            }
+
+            // Create a temporary SubredditInfo object
+            var newSubreddit = new SubredditInfo
+            {
+                Name = subredditName,
+                LastCheckDate = new DateTime(1970, 1, 1),
+                LastPostDate = new DateTime(1970, 1, 1)
+            };
+
+            // Validate subreddit name using its own method
+            if (!newSubreddit.IsValid())
+            {
+                Logger.LogError($"Invalid subreddit name '{subredditName}'. Subreddit names must be 3–21 characters and only contain letters, numbers, or underscores.");
+                return;
+            }
+
+            // Add to list and save
+            Config.Subreddits.Add(newSubreddit);
+            Config.Save();
+            Logger.LogInfo($"Subreddit '{subredditName}' successfully added.");
         }
 
-        private static void RemoveHandler(string subreddit)
+        private static void RemoveHandler(string subredditName)
         {
-            Logger.LogInfo($"Removing subreddit: {subreddit}");
-            // Remove logic here
+            if (string.IsNullOrWhiteSpace(subredditName))
+            {
+                Logger.LogError("Subreddit name cannot be empty.");
+                return;
+            }
+
+            // Find the subreddit (case-insensitive)
+            var subreddit = Config.Subreddits
+                .FirstOrDefault(s => s.Name.Equals(subredditName, StringComparison.OrdinalIgnoreCase));
+
+            if (subreddit == null)
+            {
+                Logger.LogInfo($"Subreddit '{subredditName}' was not found.");
+                return;
+            }
+
+            // Remove the subreddit
+            Config.Subreddits.Remove(subreddit);
+            Config.Save();
+            Logger.LogInfo($"Subreddit '{subredditName}' has been removed.");
         }
 
         private static void ListHandler()
         {
             Logger.LogInfo("Listing all tracked subreddits...");
-            // List logic here
+
+            if (Config?.Subreddits == null || Config.Subreddits.Count == 0)
+            {
+                Console.WriteLine("(List Empty)");
+                return;
+            }
+
+            foreach (var subreddit in Config.Subreddits)
+            {
+                Console.WriteLine($"- {subreddit.Name}");
+            }
         }
+
     }
 }

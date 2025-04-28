@@ -17,6 +17,13 @@ namespace reddit_fetch
         {
             try
             {
+                // Load the configuration information.
+                string configPath = Path.Combine(AppContext.BaseDirectory, "config.json");
+                var config = new AppConfig();
+                CliHandler.Config = config;
+                config.ConfigFilePath = configPath;
+                config.Load();
+
                 if (args.Length > 0)
                 {
                     // CLI Mode
