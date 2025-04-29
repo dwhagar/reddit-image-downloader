@@ -172,6 +172,16 @@ namespace reddit_fetch
             // After all subreddits processed, save the updated config
             Config.Save();
             Logger.LogInfo("Download operation completed.");
+
+            // Beginning filtering operation
+            foreach (var fileName in DownloadedFiles)
+            {
+                bool fileOK = ImageFilterHelper.IsImageAcceptable(fileName);
+                if (!fileOK)
+                {
+                    DeleteFile(fileName);
+                }
+            }    
         }
 
         public static void AddHandler(string subredditName)
@@ -247,6 +257,29 @@ namespace reddit_fetch
             foreach (var subreddit in Config.Subreddits)
             {
                 Console.WriteLine($"- {subreddit.Name}");
+            }
+        }
+
+        /// <summary>
+        /// Deletes a file at the specified path with logging and error handling.
+        /// </summary>
+        private static void DeleteFile(string filePath)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                    Logger.LogInfo($"Deleted file: {filePath}");
+                }
+                else
+                {
+                    Logger.LogVerbose($"File not found, nothing to delete: {filePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError($"Failed to delete file '{filePath}': {ex.Message}");
             }
         }
 

@@ -62,7 +62,7 @@ namespace reddit_fetch
         /// <summary>
         /// Checks if a new image hash is similar to any existing hash where the file no longer exists.
         /// </summary>
-        public static bool IsDuplicate(ulong newHash, int maxDistance = 6)
+        public static bool IsDuplicate(ulong newHash, float maxSimilarity = 90.0f)
         {
             EnsureDatabaseExists();
 
@@ -80,11 +80,11 @@ namespace reddit_fetch
             {
                 ulong existingHash = (ulong)(long)reader.GetInt64(0);
 
-                int distance = HammingDistance(newHash, existingHash);
+                float similarity = ComputeSimilarityPercent(newHash, existingHash);
 
-                if (distance <= maxDistance)
+                if (similarity > maxSimilarity)
                 {
-                    Logger.LogVerbose($"Found similar hash (distance {distance}).");
+                    Logger.LogVerbose($"Found similar hash ({similarity}% similar).");
                     return true;
                 }
             }
@@ -113,6 +113,51 @@ namespace reddit_fetch
             command.ExecuteNonQuery();
 
             Logger.LogVerbose($"Updated file existence for '{filename}' to {(exists ? "exists" : "deleted")}.");
+        }
+
+        /// <summary>
+        /// Updates the FileExists flags in the database by checking the filesystem.
+        /// If a file no longer exists, sets FileExists = 0.
+        /// </summary>
+        public static void RefreshFileExistence()
+        {
+            EnsureDatabaseExists();
+
+            using var connection = new SqliteConnection($"Data Source={Config.DatabasePath}");
+            connection.Open();
+
+            using var selectCommand = connection.CreateCommand();
+            selectCommand.CommandText = @"
+        SELECT FileName FROM ImageHashes
+        WHERE FileExists = 1;
+    ";
+
+            using var reader = selectCommand.ExecuteReader();
+
+            int updatedCount = 0;
+
+            while (reader.Read())
+            {
+                string fullPath = reader.GetString(0); // Full file path now
+
+                if (!File.Exists(fullPath))
+                {
+                    UpdateFileExists(fullPath, false);
+                    updatedCount++;
+                }
+            }
+
+            Logger.LogVerbose($"File existence refresh complete. {updatedCount} files marked as missing.");
+        }
+
+        /// <summary>
+        /// Computes the similarity percentage between two 64-bit image hashes.
+        /// </summary>
+        private static double ComputeSimilarityPercent(ulong x, ulong y)
+        {
+            int distance = HammingDistance(x, y);
+            double similarity = (1.0 - (distance / 64.0)) * 100.0;
+            return similarity;
         }
 
         /// <summary>

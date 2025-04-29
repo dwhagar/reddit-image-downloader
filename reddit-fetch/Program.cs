@@ -23,8 +23,10 @@ namespace reddit_fetch
                 CliHandler.Config = config;
                 ImageFilterHelper.Config = config;
                 RedditApiHelper.Config = config;
+                HashDatabaseHelper.Config = config;
                 config.ConfigFilePath = configPath;
                 config.Load();
+                HashDatabaseHelper.RefreshFileExistence();
 
                 // TODO: Check to see if files exist still
 
